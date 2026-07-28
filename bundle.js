@@ -104,47 +104,83 @@
     };
   }
 
+  function initKakaoSDK() {
+    const kakaoKey = (window.ENV && window.ENV.KAKAO_JAVASCRIPT_KEY)
+      || (typeof process !== 'undefined' && process.env && (process.env.KAKAO_JAVASCRIPT_KEY || process.env.NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY || process.env.VITE_KAKAO_JAVASCRIPT_KEY))
+      || 'ced65b9479f95948866c4b2dab594609';
+
+    if (window.Kakao && !window.Kakao.isInitialized() && kakaoKey) {
+      try {
+        window.Kakao.init(kakaoKey);
+        console.log('✅ Kakao SDK 초기화 완료');
+      } catch (err) {
+        console.warn('Kakao init warning:', err);
+      }
+    }
+  }
+
   function shareKakaoTalk({ typeData, userName = '대학생' } = {}) {
     const kakaoKey = (window.ENV && window.ENV.KAKAO_JAVASCRIPT_KEY)
-      || (typeof process !== 'undefined' && process.env && (process.env.KAKAO_JAVASCRIPT_KEY || process.env.NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY || process.env.VITE_KAKAO_JAVASCRIPT_KEY));
+      || (typeof process !== 'undefined' && process.env && (process.env.KAKAO_JAVASCRIPT_KEY || process.env.NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY || process.env.VITE_KAKAO_JAVASCRIPT_KEY))
+      || 'ced65b9479f95948866c4b2dab594609';
+
+    const isFileProtocol = window.location.protocol === 'file:';
+    const shareUrl = isFileProtocol ? 'https://personality-test.vercel.app' : window.location.href;
+
+    const title = `[창업 성향 진단] ${userName}님의 결과: ${typeData ? typeData.name : '창업가'}`;
+    const description = typeData ? `"${typeData.tagline}"\n팀 내 대표 역할: ${typeData.role}` : '대학생 창업 캠프 승률 200% 팀 빌딩 성향 진단!';
 
     if (!window.Kakao) {
       alert('카카오 SDK를 불러오지 못했습니다. 링크 복사를 대신 실행합니다.');
       return copyShareLink(userName);
     }
 
-    try {
-      if (kakaoKey && !window.Kakao.isInitialized()) {
+    if (!window.Kakao.isInitialized() && kakaoKey) {
+      try {
         window.Kakao.init(kakaoKey);
+      } catch (e) {
+        console.warn('Kakao init error:', e);
       }
-    } catch (e) {
-      console.warn('Kakao init error:', e);
     }
 
     if (!window.Kakao.isInitialized()) {
-      console.warn('카카오 SDK 키가 등록되지 않았습니다. 클립보드 복사로 대체합니다.');
+      alert('카카오 SDK 키가 설정되지 않았습니다. 결과 링크 복사를 실행합니다.');
       return copyShareLink(userName);
     }
 
-    const shareUrl = window.location.href;
-    const title = `[창업 성향 진단] ${userName}님의 결과: ${typeData ? typeData.name : '창업가'}`;
-    const description = typeData ? `"${typeData.tagline}"\n팀 내 대표 역할: ${typeData.role}` : '대학생 창업 캠프 승률 200% 팀 빌딩 성향 진단!';
-
     try {
-      window.Kakao.Share.sendDefault({
-        objectType: 'feed',
-        content: {
-          title: title,
-          description: description,
-          imageUrl: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
-          link: { mobileWebUrl: shareUrl, webUrl: shareUrl }
-        },
-        buttons: [
-          { title: '나도 성향 테스트하기 🚀', link: { mobileWebUrl: shareUrl, webUrl: shareUrl } }
-        ]
-      });
+      if (window.Kakao.Share && typeof window.Kakao.Share.sendDefault === 'function') {
+        window.Kakao.Share.sendDefault({
+          objectType: 'feed',
+          content: {
+            title: title,
+            description: description,
+            imageUrl: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
+            link: { mobileWebUrl: shareUrl, webUrl: shareUrl }
+          },
+          buttons: [
+            { title: '나도 성향 테스트하기 🚀', link: { mobileWebUrl: shareUrl, webUrl: shareUrl } }
+          ]
+        });
+        return;
+      } else if (window.Kakao.Link && typeof window.Kakao.Link.sendDefault === 'function') {
+        window.Kakao.Link.sendDefault({
+          objectType: 'feed',
+          content: {
+            title: title,
+            description: description,
+            imageUrl: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
+            link: { mobileWebUrl: shareUrl, webUrl: shareUrl }
+          },
+          buttons: [
+            { title: '나도 성향 테스트하기 🚀', link: { mobileWebUrl: shareUrl, webUrl: shareUrl } }
+          ]
+        });
+        return;
+      }
     } catch (err) {
-      console.error('Kakao share error:', err);
+      console.error('카카오톡 공유 에러:', err);
+      alert('카카오톡 공유 중 오류가 발생했습니다.\n(카카오 디벨로퍼스 내 플랫폼 Web 도메인 등록이 필요합니다)\n결과 링크 복사로 대체합니다.');
       copyShareLink(userName);
     }
   }
@@ -601,9 +637,13 @@
     }
   }
 
-  // APP LAUNCH
-  document.addEventListener('DOMContentLoaded', renderApp);
+  // APP LAUNCH & Kakao SDK Auto Init
+  document.addEventListener('DOMContentLoaded', () => {
+    initKakaoSDK();
+    renderApp();
+  });
   if (document.readyState === 'interactive' || document.readyState === 'complete') {
+    initKakaoSDK();
     renderApp();
   }
 })();

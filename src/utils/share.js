@@ -3,6 +3,24 @@
  */
 
 /**
+ * Kakao SDK 초기화 실행
+ */
+export function initKakaoSDK() {
+  const kakaoKey = (window.ENV && window.ENV.KAKAO_JAVASCRIPT_KEY)
+    || (typeof process !== 'undefined' && process.env && (process.env.KAKAO_JAVASCRIPT_KEY || process.env.NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY || process.env.VITE_KAKAO_JAVASCRIPT_KEY))
+    || 'ced65b9479f95948866c4b2dab594609';
+
+  if (window.Kakao && !window.Kakao.isInitialized() && kakaoKey) {
+    try {
+      window.Kakao.init(kakaoKey);
+      console.log('✅ Kakao SDK 초기화 완료');
+    } catch (err) {
+      console.warn('⚠️ Kakao SDK 초기화 경고:', err);
+    }
+  }
+}
+
+/**
  * 현재 결과를 URL 클립보드에 복사
  */
 export async function copyShareLink(userName = '참가자') {
@@ -29,59 +47,98 @@ export async function copyShareLink(userName = '참가자') {
 
 /**
  * 카카오톡 공유하기 유틸리티 함수
- * 환경변수 (window.ENV.KAKAO_JAVASCRIPT_KEY 또는 process.env.KAKAO_JAVASCRIPT_KEY)에서 키를 안전하게 탐색하여 초기화
+ * 환경변수 (window.ENV.KAKAO_JAVASCRIPT_KEY 또는 process.env.KAKAO_JAVASCRIPT_KEY) 사용
  */
 export function shareKakaoTalk({ typeData, userName = '대학생' } = {}) {
-  // 환경변수 안전 탐색 (Vercel 및 로컬 환경변수 호환)
   const kakaoKey = (window.ENV && window.ENV.KAKAO_JAVASCRIPT_KEY)
-    || (typeof process !== 'undefined' && process.env && (process.env.KAKAO_JAVASCRIPT_KEY || process.env.NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY || process.env.VITE_KAKAO_JAVASCRIPT_KEY));
+    || (typeof process !== 'undefined' && process.env && (process.env.KAKAO_JAVASCRIPT_KEY || process.env.NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY || process.env.VITE_KAKAO_JAVASCRIPT_KEY))
+    || 'ced65b9479f95948866c4b2dab594609';
+
+  // 로컬 file:// 프로토콜일 경우 Kakao SDK 보안 제한 대응을 위해 기본 유효 도메인 설정
+  const isFileProtocol = window.location.protocol === 'file:';
+  const shareUrl = isFileProtocol 
+    ? 'https://personality-test.vercel.app' 
+    : window.location.href;
+
+  const title = `[창업 성향 진단] ${userName}님의 결과: ${typeData ? typeData.name : '창업가'}`;
+  const description = typeData 
+    ? `"${typeData.tagline}"\n팀 내 대표 역할: ${typeData.role}` 
+    : '대학생 창업 캠프 승률 200% 팀 빌딩 성향 진단!';
 
   if (!window.Kakao) {
-    alert('카카오 SDK를 로드 중이거나 불러오지 못했습니다. 대신 클립보드 링크 복사를 실행합니다.');
+    alert('카카오 SDK를 불러오지 못했습니다. 링크 복사를 대신 실행합니다.');
     return copyShareLink(userName);
   }
 
-  try {
-    if (kakaoKey && !window.Kakao.isInitialized()) {
+  // Kakao SDK 미초기화 시 초기화 시도
+  if (!window.Kakao.isInitialized() && kakaoKey) {
+    try {
       window.Kakao.init(kakaoKey);
+    } catch (e) {
+      console.warn('Kakao init error:', e);
     }
-  } catch (e) {
-    console.warn('Kakao SDK init warning:', e);
   }
 
   if (!window.Kakao.isInitialized()) {
-    console.warn('카카오 SDK 키가 등록되지 않았습니다. 클립보드 링크 복사로 대신합니다.');
+    alert('카카오 SDK 키가 설정되지 않았습니다. 결과 링크 복사를 실행합니다.');
     return copyShareLink(userName);
   }
 
-  const shareUrl = window.location.href;
-  const title = `[창업 성향 진단] ${userName}님의 결과: ${typeData ? typeData.name : '창업가'}`;
-  const description = typeData ? `"${typeData.tagline}"\n팀 내 대표 역할: ${typeData.role}` : '대학생 창업 캠프 승률 200% 팀 빌딩 성향 진단!';
-
   try {
-    window.Kakao.Share.sendDefault({
-      objectType: 'feed',
-      content: {
-        title: title,
-        description: description,
-        imageUrl: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
-        link: {
-          mobileWebUrl: shareUrl,
-          webUrl: shareUrl
-        }
-      },
-      buttons: [
-        {
-          title: '나도 성향 테스트하기 🚀',
+    // 1. Kakao SDK v2 (Kakao.Share.sendDefault)
+    if (window.Kakao.Share && typeof window.Kakao.Share.sendDefault === 'function') {
+      window.Kakao.Share.sendDefault({
+        objectType: 'feed',
+        content: {
+          title: title,
+          description: description,
+          imageUrl: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
           link: {
             mobileWebUrl: shareUrl,
             webUrl: shareUrl
           }
-        }
-      ]
-    });
+        },
+        buttons: [
+          {
+            title: '나도 성향 테스트하기 🚀',
+            link: {
+              mobileWebUrl: shareUrl,
+              webUrl: shareUrl
+            }
+          }
+        ]
+      });
+      return;
+    } 
+    // 2. Legacy Kakao SDK (Kakao.Link.sendDefault)
+    else if (window.Kakao.Link && typeof window.Kakao.Link.sendDefault === 'function') {
+      window.Kakao.Link.sendDefault({
+        objectType: 'feed',
+        content: {
+          title: title,
+          description: description,
+          imageUrl: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
+          link: {
+            mobileWebUrl: shareUrl,
+            webUrl: shareUrl
+          }
+        },
+        buttons: [
+          {
+            title: '나도 성향 테스트하기 🚀',
+            link: {
+              mobileWebUrl: shareUrl,
+              webUrl: shareUrl
+            }
+          }
+        ]
+      });
+      return;
+    }
   } catch (err) {
     console.error('카카오톡 공유 에러:', err);
+    // 도메인 미등록 등의 원인으로 Kakao SDK 에러 시 안내 메시지 후 링크 복사 전환
+    alert('카카오톡 공유 중 오류가 발생했습니다. (카카오 디벨로퍼스 도메인 등록 확인 필요)\n결과 링크 복사로 전환합니다.');
     copyShareLink(userName);
   }
 }
@@ -187,4 +244,11 @@ export function generateResultCardImage(typeData, userName = '대학생') {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+}
+
+// 자동 Kakao SDK 초기화 실행
+if (typeof window !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', () => {
+    initKakaoSDK();
+  });
 }
