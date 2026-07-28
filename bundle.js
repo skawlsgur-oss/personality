@@ -257,7 +257,6 @@
     `;
   }
 
-  // 3. 로딩 화면 전용 컴포넌트
   function createLoadingPage() {
     return `
       <div id="loading-page-component" style="display: flex; flex-direction: column; min-height: 100%;">
@@ -360,6 +359,26 @@
     `;
   }
 
+  // 4. 결과 화면 전용 컴포넌트
+  function createResultPage({ resultData, userName = '대학생', major = '경영/상경계열' } = {}) {
+    if (!resultData || !resultData.primaryType) return '';
+    const { primaryType, scorePercentages } = resultData;
+    return `
+      <div id="result-page-component" style="display: flex; flex-direction: column; min-height: 100%;">
+        ${createHeader({ title: '나의 창업 성향 결과' })}
+        <main class="view-wrapper animate-slide-in" style="flex: 1;">
+          ${createResultCard({ typeData: primaryType, userName, major })}
+          ${createRadarChart({ scorePercentages })}
+          ${createChemistryBadge({ typeData: primaryType })}
+          ${createActionButtons()}
+        </main>
+        <footer style="text-align: center; padding: 16px; font-size: 0.75rem; color: var(--color-text-sub); border-top: 1px dashed #E9ECEF; margin-top: 10px;">
+          © 2026 대학생 창업 캠프 팀 빌딩 가이드 | Neo-Brutalism Design System
+        </footer>
+      </div>
+    `;
+  }
+
   // 5. APPLICATION CONTROLLER STATE
   const state = {
     view: 'LANDING',
@@ -391,15 +410,11 @@
         contentHtml = createLoadingPage();
         break;
       case 'RESULT':
-        contentHtml = `
-          ${createHeader({ title: '나의 창업 성향 결과' })}
-          <main class="view-wrapper animate-slide-in">
-            ${createResultCard({ typeData: state.resultData.primaryType, userName: state.userName, major: state.major })}
-            ${createRadarChart({ scorePercentages: state.resultData.scorePercentages })}
-            ${createChemistryBadge({ typeData: state.resultData.primaryType })}
-            ${createActionButtons()}
-          </main>
-        `;
+        contentHtml = createResultPage({
+          resultData: state.resultData,
+          userName: state.userName || '대학생',
+          major: state.major
+        });
         break;
       default:
         contentHtml = createLandingPage();
@@ -478,14 +493,14 @@
     const btnDownload = document.getElementById('btn-download-card');
     if (btnDownload && state.resultData) {
       btnDownload.addEventListener('click', () => {
-        alert(`🖼️ ${state.userName}님의 창업 성향 카드 다운로드가 시작되었습니다!`);
+        alert(`🖼️ ${state.userName}님의 창업 성향 카드 저장 완료!`);
       });
     }
 
     const btnCopy = document.getElementById('btn-copy-link');
     if (btnCopy) {
       btnCopy.addEventListener('click', () => {
-        alert(`🔗 ${state.userName}님의 창업 성향 결과 링크가 복사되었습니다!`);
+        alert(`🔗 ${state.userName}님의 창업 성향 결과 링크가 클립보드에 복사되었습니다!`);
       });
     }
 

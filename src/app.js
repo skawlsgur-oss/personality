@@ -8,9 +8,10 @@ import { createProgressBar } from './components/ProgressBar.js';
 import { createLandingForm } from './components/LandingForm.js';
 import { createLandingPage, bindLandingPageEvents } from './components/LandingPage.js';
 import { createQuizPage, bindQuizPageEvents } from './components/QuizPage.js';
-import { createLoadingSpinner } from './components/LoadingSpinner.js';
 import { createLoadingPage, startLoadingTimer } from './components/LoadingPage.js';
+import { createResultPage, bindResultPageEvents } from './components/ResultPage.js';
 import { createOptionCard } from './components/OptionCard.js';
+import { createLoadingSpinner } from './components/LoadingSpinner.js';
 import { createResultCard } from './components/ResultCard.js';
 import { createRadarChart } from './components/RadarChart.js';
 import { createChemistryBadge } from './components/ChemistryBadge.js';
@@ -85,28 +86,15 @@ function renderLoadingView() {
   return createLoadingPage();
 }
 
-// 4. 결과 상세 뷰 렌더링
+// 4. 진단 결과 상세 뷰 (결과 화면) 렌더링
 function renderResultView() {
   if (!state.resultData) return renderLandingView();
 
-  const { primaryType, scorePercentages } = state.resultData;
-
-  return `
-    ${createHeader({ title: '나의 창업 성향 결과' })}
-    <main class="view-wrapper animate-slide-in">
-      ${createResultCard({
-        typeData: primaryType,
-        userName: state.userName || '대학생',
-        major: state.major
-      })}
-
-      ${createRadarChart({ scorePercentages })}
-
-      ${createChemistryBadge({ typeData: primaryType })}
-
-      ${createActionButtons()}
-    </main>
-  `;
+  return createResultPage({
+    resultData: state.resultData,
+    userName: state.userName || '대학생',
+    major: state.major
+  });
 }
 
 // Event Bindings
@@ -168,31 +156,18 @@ function bindEvents() {
     });
   }
 
-  // 결과 - 카드 이미지 저장
-  const btnDownload = document.getElementById('btn-download-card');
-  if (btnDownload && state.resultData) {
-    btnDownload.addEventListener('click', () => {
-      generateResultCardImage(state.resultData.primaryType, state.userName);
-    });
-  }
-
-  // 결과 - 링크 복사
-  const btnCopy = document.getElementById('btn-copy-link');
-  if (btnCopy) {
-    btnCopy.addEventListener('click', () => {
-      copyShareLink(state.userName);
-    });
-  }
-
-  // 결과 - 다시 테스트하기
-  const btnRestart = document.getElementById('btn-restart-quiz');
-  if (btnRestart) {
-    btnRestart.addEventListener('click', () => {
-      state.view = 'LANDING';
-      state.currentQuestionIndex = 0;
-      state.userAnswers = [];
-      state.resultData = null;
-      renderApp();
+  // 4. 진단 결과 (결과 화면) 이벤트 바인딩
+  if (state.view === 'RESULT') {
+    bindResultPageEvents({
+      resultData: state.resultData,
+      userName: state.userName,
+      onRestartQuiz: () => {
+        state.view = 'LANDING';
+        state.currentQuestionIndex = 0;
+        state.userAnswers = [];
+        state.resultData = null;
+        renderApp();
+      }
     });
   }
 
