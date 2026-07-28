@@ -125,7 +125,12 @@
       || 'ced65b9479f95948866c4b2dab594609';
 
     const isFileProtocol = window.location.protocol === 'file:';
-    const shareUrl = isFileProtocol ? 'https://personality-test.vercel.app' : window.location.href;
+    const currentOriginUrl = isFileProtocol 
+      ? 'https://personality-test.vercel.app' 
+      : window.location.href;
+
+    const targetWebUrl = currentOriginUrl;
+    const targetMobileUrl = currentOriginUrl;
 
     const title = `[창업 성향 진단] ${userName}님의 결과: ${typeData ? typeData.name : '창업가'}`;
     const description = typeData ? `"${typeData.tagline}"\n팀 내 대표 역할: ${typeData.role}` : '대학생 창업 캠프 승률 200% 팀 빌딩 성향 진단!';
@@ -148,39 +153,39 @@
       return copyShareLink(userName);
     }
 
+    const shareConfig = {
+      objectType: 'feed',
+      content: {
+        title: title,
+        description: description,
+        imageUrl: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
+        link: {
+          webUrl: targetWebUrl,
+          mobileWebUrl: targetMobileUrl
+        }
+      },
+      buttons: [
+        {
+          title: '나도 성향 테스트하기 🚀',
+          link: {
+            webUrl: targetWebUrl,
+            mobileWebUrl: targetMobileUrl
+          }
+        }
+      ]
+    };
+
     try {
       if (window.Kakao.Share && typeof window.Kakao.Share.sendDefault === 'function') {
-        window.Kakao.Share.sendDefault({
-          objectType: 'feed',
-          content: {
-            title: title,
-            description: description,
-            imageUrl: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
-            link: { mobileWebUrl: shareUrl, webUrl: shareUrl }
-          },
-          buttons: [
-            { title: '나도 성향 테스트하기 🚀', link: { mobileWebUrl: shareUrl, webUrl: shareUrl } }
-          ]
-        });
+        window.Kakao.Share.sendDefault(shareConfig);
         return;
       } else if (window.Kakao.Link && typeof window.Kakao.Link.sendDefault === 'function') {
-        window.Kakao.Link.sendDefault({
-          objectType: 'feed',
-          content: {
-            title: title,
-            description: description,
-            imageUrl: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
-            link: { mobileWebUrl: shareUrl, webUrl: shareUrl }
-          },
-          buttons: [
-            { title: '나도 성향 테스트하기 🚀', link: { mobileWebUrl: shareUrl, webUrl: shareUrl } }
-          ]
-        });
+        window.Kakao.Link.sendDefault(shareConfig);
         return;
       }
     } catch (err) {
       console.error('카카오톡 공유 에러:', err);
-      alert('카카오톡 공유 중 오류가 발생했습니다.\n(카카오 디벨로퍼스 내 플랫폼 Web 도메인 등록이 필요합니다)\n결과 링크 복사로 대체합니다.');
+      alert('카카오톡 공유 중 오류가 발생했습니다.\n(카카오 디벨로퍼스 웹 도메인 등록을 확인해 주세요)\n결과 링크 복사로 대체합니다.');
       copyShareLink(userName);
     }
   }
