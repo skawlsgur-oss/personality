@@ -6,6 +6,7 @@ import { copyShareLink, generateResultCardImage } from './utils/share.js';
 import { createHeader } from './components/Header.js';
 import { createProgressBar } from './components/ProgressBar.js';
 import { createLandingForm } from './components/LandingForm.js';
+import { createLandingPage, bindLandingPageEvents } from './components/LandingPage.js';
 import { createOptionCard } from './components/OptionCard.js';
 import { createLoadingSpinner } from './components/LoadingSpinner.js';
 import { createResultCard } from './components/ResultCard.js';
@@ -55,14 +56,12 @@ function renderApp() {
   bindEvents();
 }
 
-// 1. 랜딩 뷰 렌더링
+// 1. 랜딩 뷰 (시작 화면) 렌더링
 function renderLandingView() {
-  return `
-    ${createHeader({ title: '창업 성향 테스트' })}
-    <main class="view-wrapper">
-      ${createLandingForm()}
-    </main>
-  `;
+  return createLandingPage({
+    initialNickname: state.userName,
+    initialMajor: state.major
+  });
 }
 
 // 2. 질문 퀴즈 뷰 렌더링
@@ -163,20 +162,17 @@ function renderResultView() {
 
 // Event Bindings
 function bindEvents() {
-  // 랜딩 - 테스트 시작
-  const btnStart = document.getElementById('btn-start-quiz');
-  if (btnStart) {
-    btnStart.addEventListener('click', () => {
-      const inputName = document.getElementById('input-nickname');
-      const selectMajor = document.getElementById('select-major');
-
-      state.userName = inputName?.value.trim() || '대학생';
-      state.major = selectMajor?.value || '경영/상경계열';
-
-      state.view = 'QUIZ';
-      state.currentQuestionIndex = 0;
-      state.userAnswers = [];
-      renderApp();
+  // 1. 랜딩 (시작 화면) 이벤트 바인딩
+  if (state.view === 'LANDING') {
+    bindLandingPageEvents({
+      onStartQuiz: ({ userName, major }) => {
+        state.userName = userName;
+        state.major = major;
+        state.view = 'QUIZ';
+        state.currentQuestionIndex = 0;
+        state.userAnswers = [];
+        renderApp();
+      }
     });
   }
 
