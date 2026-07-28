@@ -7,7 +7,7 @@
   <meta name="description" content="대학생 창업 캠프 참가자를 위한 12가지 상황극 질문 기반 창업 성향 진단 및 조 편성 궁합 테스트 웹사이트">
   
   <!-- Pretendard Web Font -->
-  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" opacity="1" />
   
   <!-- Core Design System CSS -->
   <link rel="stylesheet" href="./style.css">
@@ -16,10 +16,10 @@
 
   <!-- Mobile-First Container (Max-Width: 480px) -->
   <div id="app-container">
-    <!-- ES Modules Component Tree dynamically rendered via app.js -->
+    <!-- Component Tree dynamically rendered via bundle.js -->
   </div>
 
-  <!-- App Entry Point -->
-  <script type="module" src="./src/app.js"></script>
+  <!-- Standalone Bundle (file:// 탐색기 더블클릭 및 웹서버 100% 완벽 호환) -->
+  <script src="./bundle.js"></script>
 </body>
 </html>
