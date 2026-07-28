@@ -28,6 +28,65 @@ export async function copyShareLink(userName = '참가자') {
 }
 
 /**
+ * 카카오톡 공유하기 유틸리티 함수
+ * 환경변수 (window.ENV.KAKAO_JAVASCRIPT_KEY 또는 process.env.KAKAO_JAVASCRIPT_KEY)에서 키를 안전하게 탐색하여 초기화
+ */
+export function shareKakaoTalk({ typeData, userName = '대학생' } = {}) {
+  // 환경변수 안전 탐색 (Vercel 및 로컬 환경변수 호환)
+  const kakaoKey = (window.ENV && window.ENV.KAKAO_JAVASCRIPT_KEY)
+    || (typeof process !== 'undefined' && process.env && (process.env.KAKAO_JAVASCRIPT_KEY || process.env.NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY || process.env.VITE_KAKAO_JAVASCRIPT_KEY));
+
+  if (!window.Kakao) {
+    alert('카카오 SDK를 로드 중이거나 불러오지 못했습니다. 대신 클립보드 링크 복사를 실행합니다.');
+    return copyShareLink(userName);
+  }
+
+  try {
+    if (kakaoKey && !window.Kakao.isInitialized()) {
+      window.Kakao.init(kakaoKey);
+    }
+  } catch (e) {
+    console.warn('Kakao SDK init warning:', e);
+  }
+
+  if (!window.Kakao.isInitialized()) {
+    console.warn('카카오 SDK 키가 등록되지 않았습니다. 클립보드 링크 복사로 대신합니다.');
+    return copyShareLink(userName);
+  }
+
+  const shareUrl = window.location.href;
+  const title = `[창업 성향 진단] ${userName}님의 결과: ${typeData ? typeData.name : '창업가'}`;
+  const description = typeData ? `"${typeData.tagline}"\n팀 내 대표 역할: ${typeData.role}` : '대학생 창업 캠프 승률 200% 팀 빌딩 성향 진단!';
+
+  try {
+    window.Kakao.Share.sendDefault({
+      objectType: 'feed',
+      content: {
+        title: title,
+        description: description,
+        imageUrl: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
+        link: {
+          mobileWebUrl: shareUrl,
+          webUrl: shareUrl
+        }
+      },
+      buttons: [
+        {
+          title: '나도 성향 테스트하기 🚀',
+          link: {
+            mobileWebUrl: shareUrl,
+            webUrl: shareUrl
+          }
+        }
+      ]
+    });
+  } catch (err) {
+    console.error('카카오톡 공유 에러:', err);
+    copyShareLink(userName);
+  }
+}
+
+/**
  * HTML5 Canvas를 활용하여 결과 카드 이미지를 생성하고 다운로드
  */
 export function generateResultCardImage(typeData, userName = '대학생') {

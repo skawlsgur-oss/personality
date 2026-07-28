@@ -4,7 +4,7 @@ import { createRadarChart } from './RadarChart.js';
 import { createChemistryBadge } from './ChemistryBadge.js';
 import { createActionButtons } from './ActionButtons.js';
 
-import { generateResultCardImage, copyShareLink } from '../utils/share.js';
+import { generateResultCardImage, copyShareLink, shareKakaoTalk } from '../utils/share.js';
 
 /**
  * 4. 진단 결과 화면 (Result Screen) 컴포넌트 (ResultPage.js)
@@ -77,6 +77,17 @@ export function createResultPage({
  * @param {Object} handlers { resultData, userName, onRestartQuiz }
  */
 export function bindResultPageEvents({ resultData, userName = '대학생', onRestartQuiz } = {}) {
+  // 카카오톡 결과 공유 버튼
+  const btnShareKakao = document.getElementById('btn-share-kakao');
+  if (btnShareKakao && resultData) {
+    btnShareKakao.addEventListener('click', () => {
+      shareKakaoTalk({
+        typeData: resultData.primaryType,
+        userName: userName
+      });
+    });
+  }
+
   // 결과 카드 이미지 저장 버튼
   const btnDownload = document.getElementById('btn-download-card');
   if (btnDownload && resultData) {

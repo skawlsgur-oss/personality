@@ -1,6 +1,6 @@
 /* ==========================================================================
    📦 STANDALONE BUNDLE (bundle.js)
-   file:// 로컬 파일 직접 열기 (더블 클릭) 및 웹 서버 호환 100% 보장 스크립트
+   file:// 로컬 파일 직접 열기 (더블 클릭) 및 웹 서버 / Vercel 호환 100% 보장 스크립트
    ========================================================================== */
 
 (function () {
@@ -68,7 +68,7 @@
     { id: 12, stage: '🏆 캠프 마감 및 소회', question: '창업 캠프가 끝난 뒤, 당신이 가장 보람을 느끼는 순간은?', optionA: { text: '팀원들과 하나가 되어 밤새우며 단단한 신뢰와 찰떡같은 케미를 쌓았다는 것을 느낄 때!', types: ['PEOPLE', 'ACTION'] }, optionB: { text: '아무것도 없던 백지상태에서 실제 시장에 먹히는 탄탄한 사업 결과물을 완성해 냈을 때!', types: ['MAKER', 'STRATEGY'] } }
   ];
 
-  // 3. UTILS: 결과 계산기
+  // 3. UTILS: 결과 계산기 & 공유 유틸
   function calculatePersonalityResult(userAnswers) {
     const scores = { IDEA: 0, MAKER: 0, STRATEGY: 0, PEOPLE: 0, ANALYSIS: 0, ACTION: 0 };
     userAnswers.forEach((ans) => {
@@ -102,6 +102,70 @@
       scores,
       scorePercentages
     };
+  }
+
+  function shareKakaoTalk({ typeData, userName = '대학생' } = {}) {
+    const kakaoKey = (window.ENV && window.ENV.KAKAO_JAVASCRIPT_KEY)
+      || (typeof process !== 'undefined' && process.env && (process.env.KAKAO_JAVASCRIPT_KEY || process.env.NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY || process.env.VITE_KAKAO_JAVASCRIPT_KEY));
+
+    if (!window.Kakao) {
+      alert('카카오 SDK를 불러오지 못했습니다. 링크 복사를 대신 실행합니다.');
+      return copyShareLink(userName);
+    }
+
+    try {
+      if (kakaoKey && !window.Kakao.isInitialized()) {
+        window.Kakao.init(kakaoKey);
+      }
+    } catch (e) {
+      console.warn('Kakao init error:', e);
+    }
+
+    if (!window.Kakao.isInitialized()) {
+      console.warn('카카오 SDK 키가 등록되지 않았습니다. 클립보드 복사로 대체합니다.');
+      return copyShareLink(userName);
+    }
+
+    const shareUrl = window.location.href;
+    const title = `[창업 성향 진단] ${userName}님의 결과: ${typeData ? typeData.name : '창업가'}`;
+    const description = typeData ? `"${typeData.tagline}"\n팀 내 대표 역할: ${typeData.role}` : '대학생 창업 캠프 승률 200% 팀 빌딩 성향 진단!';
+
+    try {
+      window.Kakao.Share.sendDefault({
+        objectType: 'feed',
+        content: {
+          title: title,
+          description: description,
+          imageUrl: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
+          link: { mobileWebUrl: shareUrl, webUrl: shareUrl }
+        },
+        buttons: [
+          { title: '나도 성향 테스트하기 🚀', link: { mobileWebUrl: shareUrl, webUrl: shareUrl } }
+        ]
+      });
+    } catch (err) {
+      console.error('Kakao share error:', err);
+      copyShareLink(userName);
+    }
+  }
+
+  function copyShareLink(userName = '대학생') {
+    const shareUrl = window.location.href;
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(shareUrl);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = shareUrl;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+      alert(`🎉 ${userName}님의 창업 성향 결과 링크가 클립보드에 복사되었습니다!`);
+    } catch (e) {
+      alert('주소를 직접 복사해 주세요.');
+    }
   }
 
   // 4. COMPONENTS
@@ -352,14 +416,14 @@
   function createActionButtons() {
     return `
       <div class="action-buttons-container" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px;">
-        ${createPrimaryButton({ id: 'btn-download-card', text: '🖼️ 결과 카드 이미지 저장하기', variant: 'accent' })}
-        ${createPrimaryButton({ id: 'btn-copy-link', text: '🔗 결과 링크 복사하여 공유하기', variant: 'primary' })}
+        ${createPrimaryButton({ id: 'btn-share-kakao', text: '💬 카카오톡 결과 공유하기', variant: 'accent' })}
+        ${createPrimaryButton({ id: 'btn-download-card', text: '🖼️ 결과 카드 이미지 저장하기', variant: 'primary' })}
+        ${createPrimaryButton({ id: 'btn-copy-link', text: '🔗 결과 링크 복사하여 공유하기', variant: 'secondary' })}
         ${createPrimaryButton({ id: 'btn-restart-quiz', text: '🔄 테스트 다시하기', variant: 'secondary' })}
       </div>
     `;
   }
 
-  // 4. 결과 화면 전용 컴포넌트
   function createResultPage({ resultData, userName = '대학생', major = '경영/상경계열' } = {}) {
     if (!resultData || !resultData.primaryType) return '';
     const { primaryType, scorePercentages } = resultData;
@@ -489,6 +553,17 @@
       });
     }
 
+    // 카카오톡 결과 공유 버튼
+    const btnShareKakao = document.getElementById('btn-share-kakao');
+    if (btnShareKakao && state.resultData) {
+      btnShareKakao.addEventListener('click', () => {
+        shareKakaoTalk({
+          typeData: state.resultData.primaryType,
+          userName: state.userName
+        });
+      });
+    }
+
     // 결과 액션 버튼
     const btnDownload = document.getElementById('btn-download-card');
     if (btnDownload && state.resultData) {
@@ -500,7 +575,7 @@
     const btnCopy = document.getElementById('btn-copy-link');
     if (btnCopy) {
       btnCopy.addEventListener('click', () => {
-        alert(`🔗 ${state.userName}님의 창업 성향 결과 링크가 클립보드에 복사되었습니다!`);
+        copyShareLink(state.userName);
       });
     }
 

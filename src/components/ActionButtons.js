@@ -14,10 +14,18 @@ export function createActionButtons() {
       margin-bottom: 24px;
     ">
       ${createPrimaryButton({
+        id: 'btn-share-kakao',
+        text: '💬 카카오톡 결과 공유하기',
+        icon: '',
+        variant: 'accent',
+        fullWidth: true
+      })}
+
+      ${createPrimaryButton({
         id: 'btn-download-card',
         text: '🖼️ 결과 카드 이미지 저장하기',
         icon: '',
-        variant: 'accent',
+        variant: 'primary',
         fullWidth: true
       })}
 
@@ -25,7 +33,7 @@ export function createActionButtons() {
         id: 'btn-copy-link',
         text: '🔗 결과 링크 복사하여 공유하기',
         icon: '',
-        variant: 'primary',
+        variant: 'secondary',
         fullWidth: true
       })}
 
