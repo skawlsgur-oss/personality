@@ -6,6 +6,7 @@ import { createPrimaryButton } from './components/PrimaryButton.js';
 import { createOptionCard } from './components/OptionCard.js';
 import { createLandingForm } from './components/LandingForm.js';
 import { createLandingPage } from './components/LandingPage.js';
+import { createQuizPage } from './components/QuizPage.js';
 import { createLoadingSpinner } from './components/LoadingSpinner.js';
 import { createResultCard } from './components/ResultCard.js';
 import { createRadarChart } from './components/RadarChart.js';

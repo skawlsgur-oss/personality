@@ -7,6 +7,7 @@ import { createHeader } from './components/Header.js';
 import { createProgressBar } from './components/ProgressBar.js';
 import { createLandingForm } from './components/LandingForm.js';
 import { createLandingPage, bindLandingPageEvents } from './components/LandingPage.js';
+import { createQuizPage, bindQuizPageEvents } from './components/QuizPage.js';
 import { createOptionCard } from './components/OptionCard.js';
 import { createLoadingSpinner } from './components/LoadingSpinner.js';
 import { createResultCard } from './components/ResultCard.js';
@@ -64,66 +65,18 @@ function renderLandingView() {
   });
 }
 
-// 2. 질문 퀴즈 뷰 렌더링
+// 2. 질문 퀴즈 뷰 (테스트 진행 화면) 렌더링
 function renderQuizView() {
   const currentQ = QUESTIONS[state.currentQuestionIndex];
   const step = state.currentQuestionIndex + 1;
   const currentAnswer = state.userAnswers[state.currentQuestionIndex];
 
-  return `
-    ${createHeader({ title: '창업 상황극 테스트', step, totalSteps: QUESTIONS.length })}
-    ${createProgressBar({ step, totalSteps: QUESTIONS.length })}
-    
-    <main class="view-wrapper animate-slide-in">
-      <div style="margin-bottom: 20px;">
-        <span style="
-          background-color: #F1F3F5;
-          color: var(--color-primary);
-          font-weight: 800;
-          font-size: 0.8125rem;
-          padding: 4px 10px;
-          border-radius: var(--radius-full);
-          border: var(--neo-border-thin);
-          display: inline-block;
-          margin-bottom: 8px;
-        ">${currentQ.stage}</span>
-
-        <h2 class="text-h2" style="font-weight: 800; color: var(--color-text-main);">
-          Q${currentQ.id}. ${currentQ.question}
-        </h2>
-      </div>
-
-      <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
-        ${createOptionCard({
-          optionKey: 'optionA',
-          label: 'A',
-          text: currentQ.optionA.text,
-          isSelected: currentAnswer?.selectedOption === 'optionA'
-        })}
-
-        ${createOptionCard({
-          optionKey: 'optionB',
-          label: 'B',
-          text: currentQ.optionB.text,
-          isSelected: currentAnswer?.selectedOption === 'optionB'
-        })}
-      </div>
-
-      <div style="display: flex; gap: 10px; margin-top: 16px;">
-        ${state.currentQuestionIndex > 0 ? `
-          <button id="btn-prev-quiz" style="
-            flex: 1;
-            padding: 12px;
-            font-weight: 700;
-            background-color: #F1F3F5;
-            border: var(--neo-border-thin);
-            border-radius: var(--radius-md);
-            cursor: pointer;
-          ">⬅️ 이전 질문</button>
-        ` : ''}
-      </div>
-    </main>
-  `;
+  return createQuizPage({
+    currentQuestion: currentQ,
+    currentStep: step,
+    totalSteps: QUESTIONS.length,
+    selectedOptionKey: currentAnswer?.selectedOption
+  });
 }
 
 // 3. 분석 대기 로딩 뷰 렌더링
@@ -176,45 +129,40 @@ function bindEvents() {
     });
   }
 
-  // 퀴즈 - A/B 선택지 클릭
-  const optionCards = document.querySelectorAll('.option-card');
-  optionCards.forEach(card => {
-    card.addEventListener('click', () => {
-      const optionKey = card.getAttribute('data-option');
-      const currentQ = QUESTIONS[state.currentQuestionIndex];
-      const selectedObj = currentQ[optionKey];
+  // 2. 질문 퀴즈 (테스트 진행 화면) 이벤트 바인딩
+  if (state.view === 'QUIZ') {
+    bindQuizPageEvents({
+      onSelectOption: (optionKey) => {
+        const currentQ = QUESTIONS[state.currentQuestionIndex];
+        const selectedObj = currentQ[optionKey];
 
-      state.userAnswers[state.currentQuestionIndex] = {
-        questionId: currentQ.id,
-        selectedOption: optionKey,
-        types: selectedObj.types
-      };
+        state.userAnswers[state.currentQuestionIndex] = {
+          questionId: currentQ.id,
+          selectedOption: optionKey,
+          types: selectedObj.types
+        };
 
-      // 다음 질문 또는 분석 로딩으로 이동
-      if (state.currentQuestionIndex < QUESTIONS.length - 1) {
-        state.currentQuestionIndex += 1;
-        renderApp();
-      } else {
-        // 완료 - 결과 계산 후 2.5초 로딩 화면 전환
-        state.resultData = calculatePersonalityResult(state.userAnswers);
-        state.view = 'LOADING';
-        renderApp();
-
-        setTimeout(() => {
-          state.view = 'RESULT';
+        // 다음 질문 또는 분석 로딩으로 이동
+        if (state.currentQuestionIndex < QUESTIONS.length - 1) {
+          state.currentQuestionIndex += 1;
           renderApp();
-        }, 2200);
-      }
-    });
-  });
+        } else {
+          // 완료 - 결과 계산 후 2.2초 로딩 화면 전환
+          state.resultData = calculatePersonalityResult(state.userAnswers);
+          state.view = 'LOADING';
+          renderApp();
 
-  // 퀴즈 - 이전 버튼
-  const btnPrev = document.getElementById('btn-prev-quiz');
-  if (btnPrev) {
-    btnPrev.addEventListener('click', () => {
-      if (state.currentQuestionIndex > 0) {
-        state.currentQuestionIndex -= 1;
-        renderApp();
+          setTimeout(() => {
+            state.view = 'RESULT';
+            renderApp();
+          }, 2200);
+        }
+      },
+      onPrevQuestion: () => {
+        if (state.currentQuestionIndex > 0) {
+          state.currentQuestionIndex -= 1;
+          renderApp();
+        }
       }
     });
   }
