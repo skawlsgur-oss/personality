@@ -8,8 +8,9 @@ import { createProgressBar } from './components/ProgressBar.js';
 import { createLandingForm } from './components/LandingForm.js';
 import { createLandingPage, bindLandingPageEvents } from './components/LandingPage.js';
 import { createQuizPage, bindQuizPageEvents } from './components/QuizPage.js';
-import { createOptionCard } from './components/OptionCard.js';
 import { createLoadingSpinner } from './components/LoadingSpinner.js';
+import { createLoadingPage, startLoadingTimer } from './components/LoadingPage.js';
+import { createOptionCard } from './components/OptionCard.js';
 import { createResultCard } from './components/ResultCard.js';
 import { createRadarChart } from './components/RadarChart.js';
 import { createChemistryBadge } from './components/ChemistryBadge.js';
@@ -79,14 +80,9 @@ function renderQuizView() {
   });
 }
 
-// 3. 분석 대기 로딩 뷰 렌더링
+// 3. 성향 데이터 분석 뷰 (로딩 화면) 렌더링
 function renderLoadingView() {
-  return `
-    ${createHeader({ title: '성향 분석 중...' })}
-    <main class="view-wrapper">
-      ${createLoadingSpinner()}
-    </main>
-  `;
+  return createLoadingPage();
 }
 
 // 4. 결과 상세 뷰 렌더링
@@ -142,20 +138,14 @@ function bindEvents() {
           types: selectedObj.types
         };
 
-        // 다음 질문 또는 분석 로딩으로 이동
+        // 완료 - 결과 계산 후 2.2초 로딩 화면 전환
         if (state.currentQuestionIndex < QUESTIONS.length - 1) {
           state.currentQuestionIndex += 1;
           renderApp();
         } else {
-          // 완료 - 결과 계산 후 2.2초 로딩 화면 전환
           state.resultData = calculatePersonalityResult(state.userAnswers);
           state.view = 'LOADING';
           renderApp();
-
-          setTimeout(() => {
-            state.view = 'RESULT';
-            renderApp();
-          }, 2200);
         }
       },
       onPrevQuestion: () => {
@@ -163,6 +153,17 @@ function bindEvents() {
           state.currentQuestionIndex -= 1;
           renderApp();
         }
+      }
+    });
+  }
+
+  // 3. 성향 데이터 분석 (로딩 화면) 타이머 제어
+  if (state.view === 'LOADING') {
+    startLoadingTimer({
+      duration: 2200,
+      onComplete: () => {
+        state.view = 'RESULT';
+        renderApp();
       }
     });
   }

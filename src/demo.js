@@ -8,6 +8,7 @@ import { createLandingForm } from './components/LandingForm.js';
 import { createLandingPage } from './components/LandingPage.js';
 import { createQuizPage } from './components/QuizPage.js';
 import { createLoadingSpinner } from './components/LoadingSpinner.js';
+import { createLoadingPage } from './components/LoadingPage.js';
 import { createResultCard } from './components/ResultCard.js';
 import { createRadarChart } from './components/RadarChart.js';
 import { createChemistryBadge } from './components/ChemistryBadge.js';
